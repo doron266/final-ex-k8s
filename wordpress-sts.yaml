@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: wordpress-sts
+  namespace: wordpress
+  labels:
+    app: wordpress
+spec: # specification for deployment resource
+  replicas: 2
+  selector:
+    matchLabels:
+     app: wordpress
+  template: # blueprint for Pod
+    metadata:
+      labels:
+        app: wordpress
+    spec: # specification for Pod
+      containers:
+      - name: wordpress
+        image:  992382545251.dkr.ecr.us-east-1.amazonaws.com/dw-repo/wordpress:latest
+        ports:
+        - containerPort: 80
+          name: wordpress-sts
+        env:
+          - name: WORDPRESS_DB_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: mariadb-configmap
+                key: db-svc
+          - name: WORDPRESS_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mariadb-secret
+                key:  ROOT_PASSWORD
+          - name: WORDPRESS_DB_USER
+            value: root
+          - name: WORDPRESS_DEBUG
+            value: "1"
+        volumeMounts:
+        - name: wordpress-persistent-storage
+          mountPath: /var/www/html
+      imagePullSecrets:
+      - name: awsregcred
+      volumes:
+        - name: wordpress-persistent-storage
+          persistentVolumeClaim:
+            claimName: wordpress-pvc
